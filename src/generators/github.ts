@@ -20,6 +20,7 @@ export async function generateGitHubWorkflow(
     testCommand: detection.hasTests ? commands.test : null,
     lintCommand: detection.hasLintScript ? commands.lint : null,
     typecheckCommand: detection.hasTsConfig ? commands.typecheck : null,
+    telegramNotifications: detection.telegramNotifications,
   };
 
   const yamlContent = await readAndCompileTemplate(detection.framework, variables);

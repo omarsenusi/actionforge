@@ -10,6 +10,7 @@ export interface DetectionResult {
   hasTests: boolean;
   hasLintScript: boolean;
   hasBuildScript: boolean;
+  telegramNotifications?: boolean;
 }
 
 export interface FrameworkPlugin {

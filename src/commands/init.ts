@@ -74,6 +74,12 @@ export async function initCommand(): Promise<void> {
         { name: 'Build Project', value: 'build', checked: detection.hasBuildScript },
       ],
     },
+    {
+      type: 'confirm',
+      name: 'telegramNotifications',
+      message: 'Would you like to enable Telegram notifications for CI build success/failure?',
+      default: false,
+    },
   ]);
 
   const customizedDetection: DetectionResult = {
@@ -85,6 +91,7 @@ export async function initCommand(): Promise<void> {
     hasTests: (answers.checks as string[]).includes('test'),
     hasLintScript: (answers.checks as string[]).includes('lint'),
     hasBuildScript: (answers.checks as string[]).includes('build'),
+    telegramNotifications: answers.telegramNotifications,
   };
 
   const genSpinner = ora('Generating GitHub Actions CI workflow...').start();

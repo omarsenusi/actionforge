@@ -52,6 +52,7 @@ async function main() {
     .option('--no-typecheck', 'Exclude Type Check script check')
     .option('--no-test', 'Exclude Test script check')
     .option('--no-build', 'Exclude Build script check')
+    .option('--telegram', 'Enable Telegram notifications for CI build status')
     .action(async (options) => {
       try {
         await generateCommand(options);

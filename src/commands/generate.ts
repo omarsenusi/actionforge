@@ -13,6 +13,7 @@ export interface GenerateOptions {
   typecheck?: boolean;
   test?: boolean;
   build?: boolean;
+  telegram?: boolean;
 }
 
 export async function generateCommand(options: GenerateOptions): Promise<void> {
@@ -50,6 +51,7 @@ export async function generateCommand(options: GenerateOptions): Promise<void> {
     hasTests: options.test !== undefined ? options.test : detection.hasTests,
     hasLintScript: options.lint !== undefined ? options.lint : detection.hasLintScript,
     hasBuildScript: options.build !== undefined ? options.build : detection.hasBuildScript,
+    telegramNotifications: options.telegram || false,
   };
 
   const genSpinner = ora(`Generating CI workflow for ${customizedDetection.framework}...`).start();
