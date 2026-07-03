@@ -28,7 +28,7 @@ export async function initCommand(): Promise<void> {
   // Prompts
   const answers = await inquirer.prompt([
     {
-      type: 'list',
+      type: 'select',
       name: 'framework',
       message: 'Confirm or select your project framework:',
       choices: [
@@ -42,7 +42,7 @@ export async function initCommand(): Promise<void> {
       default: detection.framework,
     },
     {
-      type: 'list',
+      type: 'select',
       name: 'packageManager',
       message: 'Confirm or select your package manager:',
       choices: [
