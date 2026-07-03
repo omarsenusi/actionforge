@@ -1,0 +1,70 @@
+name: Node.js CI on: push: branches: [ main, master, dev, develop ] pull_request: branches: [ main,
+master, dev, develop ] permissions: contents: read jobs: build-and-test: name: Build & Test
+(Node.js) runs-on: ubuntu-latest steps: - name: Checkout repository uses: actions/checkout@v4
+
+{{#if (eq packageManager 'pnpm')}}
+  - name: Setup pnpm uses: pnpm/action-setup@v3 with: version: 9
+{{/if}}
+
+{{#if (eq packageManager 'bun')}}
+  - name: Setup Bun uses: oven-sh/setup-bun@v2 with: bun-version: latest
+{{/if}}
+
+- name: Setup Node.js uses: actions/setup-node@v4 with: node-version: '{{nodeVersion}}'
+{{#if (eq packageManager 'npm')}}
+  cache: 'npm'
+{{/if}}
+{{#if (eq packageManager 'pnpm')}}
+  cache: 'pnpm'
+{{/if}}
+{{#if (eq packageManager 'yarn')}}
+  cache: 'yarn'
+{{/if}}
+
+- name: Install dependencies run:
+{{installCommand}}
+
+{{#if lintCommand}}
+  - name: Run lint run:
+  {{lintCommand}}
+{{/if}}
+
+{{#if typecheckCommand}}
+  - name: Run typecheck run:
+  {{typecheckCommand}}
+{{/if}}
+
+{{#if testCommand}}
+  - name: Run tests run:
+  {{testCommand}}
+{{/if}}
+
+{{#if buildCommand}}
+  - name: Build project run:
+  {{buildCommand}}
+
+  - name: Upload build artifact uses: actions/upload-artifact@v4 with: name: node-build path: dist/
+  retention-days: 7
+{{/if}}
+
+- name: Success Summary if: success() run: | echo "### ✅ Node.js CI Pipeline Success" >>
+$GITHUB_STEP_SUMMARY echo "All pipeline checks completed successfully." >> $GITHUB_STEP_SUMMARY echo
+"" >> $GITHUB_STEP_SUMMARY echo "| Phase | Status |" >> $GITHUB_STEP_SUMMARY echo "| :--- | :--- |"
+>> $GITHUB_STEP_SUMMARY echo "| Checkout | Passed |" >> $GITHUB_STEP_SUMMARY echo "| Install
+Dependencies | Passed |" >> $GITHUB_STEP_SUMMARY
+{{#if lintCommand}}
+  echo "| Lint checks | Passed |" >> $GITHUB_STEP_SUMMARY
+{{/if}}
+{{#if typecheckCommand}}
+  echo "| Type checks | Passed |" >> $GITHUB_STEP_SUMMARY
+{{/if}}
+{{#if testCommand}}
+  echo "| Unit Tests | Passed |" >> $GITHUB_STEP_SUMMARY
+{{/if}}
+{{#if buildCommand}}
+  echo "| Build output | Generated |" >> $GITHUB_STEP_SUMMARY
+{{/if}}
+
+- name: Failure Summary if: failure() run: | echo "### ❌ Node.js CI Pipeline Failed" >>
+$GITHUB_STEP_SUMMARY echo "Please inspect the failed build step logs to diagnose and resolve
+errors." >> $GITHUB_STEP_SUMMARY
