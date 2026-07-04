@@ -1,82 +1,124 @@
-name: AdonisJS CI on: push: branches: [ main, master, dev, develop ] pull_request: branches: [ main,
-master, dev, develop ] permissions: contents: read jobs: build-and-test: name: Build & Test
-(AdonisJS) runs-on: ubuntu-latest steps: - name: Checkout repository uses: actions/checkout@v4
+name: AdonisJS CI
 
-{{#if (eq packageManager 'pnpm')}}
-  - name: Setup pnpm uses: pnpm/action-setup@v3 with: version: 9
-{{/if}}
+on:
+  push:
+    branches: [ main, master, dev, develop ]
+  pull_request:
+    branches: [ main, master, dev, develop ]
 
-{{#if (eq packageManager 'bun')}}
-  - name: Setup Bun uses: oven-sh/setup-bun@v2 with: bun-version: latest
-{{/if}}
+permissions:
+  contents: read
 
-- name: Setup Node.js uses: actions/setup-node@v4 with: node-version: '{{nodeVersion}}'
-{{#if (eq packageManager 'npm')}}
-  cache: 'npm'
-{{/if}}
-{{#if (eq packageManager 'pnpm')}}
-  cache: 'pnpm'
-{{/if}}
-{{#if (eq packageManager 'yarn')}}
-  cache: 'yarn'
-{{/if}}
+jobs:
+  build-and-test:
+    name: Build & Test (AdonisJS)
+    runs-on: ubuntu-latest
 
-- name: Install dependencies run:
-{{installCommand}}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-{{#if lintCommand}}
-  - name: Run lint run:
-  {{lintCommand}}
-{{/if}}
+      {{#if (eq packageManager 'pnpm')}}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      {{/if}}
 
-{{#if typecheckCommand}}
-  - name: Run typecheck run:
-  {{typecheckCommand}}
-{{/if}}
+      {{#if (eq packageManager 'bun')}}
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      {{/if}}
 
-{{#if testCommand}}
-  - name: Run tests run:
-  {{testCommand}}
-{{/if}}
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '{{nodeVersion}}'
+          {{#if (eq packageManager 'npm')}}
+          cache: 'npm'
+          {{/if}}
+          {{#if (eq packageManager 'pnpm')}}
+          cache: 'pnpm'
+          {{/if}}
+          {{#if (eq packageManager 'yarn')}}
+          cache: 'yarn'
+          {{/if}}
 
-{{#if buildCommand}}
-  - name: Build project run:
-  {{buildCommand}}
+      - name: Install dependencies
+        run: {{installCommand}}
 
-  - name: Upload build artifact uses: actions/upload-artifact@v4 with: name: adonis-build path:
-  build/ retention-days: 7
-{{/if}}
+      {{#if lintCommand}}
+      - name: Run lint
+        run: {{lintCommand}}
+      {{/if}}
 
-- name: Success Summary if: success() run: | echo "### ✅ AdonisJS CI Pipeline Success" >>
-$GITHUB_STEP_SUMMARY echo "AdonisJS application built and verified successfully." >>
-$GITHUB_STEP_SUMMARY echo "" >> $GITHUB_STEP_SUMMARY echo "| Phase | Status |" >>
-$GITHUB_STEP_SUMMARY echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY echo "| Checkout | Passed |" >>
-$GITHUB_STEP_SUMMARY echo "| Install | Passed |" >> $GITHUB_STEP_SUMMARY
-{{#if lintCommand}}
-  echo "| Lint | Passed |" >> $GITHUB_STEP_SUMMARY
-{{/if}}
-{{#if typecheckCommand}}
-  echo "| Typecheck | Passed |" >> $GITHUB_STEP_SUMMARY
-{{/if}}
-{{#if testCommand}}
-  echo "| Tests | Passed |" >> $GITHUB_STEP_SUMMARY
-{{/if}}
-{{#if buildCommand}}
-  echo "| Build Output | Generated |" >> $GITHUB_STEP_SUMMARY
-{{/if}}
+      {{#if typecheckCommand}}
+      - name: Run typecheck
+        run: {{typecheckCommand}}
+      {{/if}}
 
-- name: Failure Summary if: failure() run: | echo "### ❌ AdonisJS CI Pipeline Failed" >>
-$GITHUB_STEP_SUMMARY echo "Please review AdonisJS compilation or test execution logs." >>
-$GITHUB_STEP_SUMMARY
+      {{#if testCommand}}
+      - name: Run tests
+        run: {{testCommand}}
+      {{/if}}
+
+      {{#if buildCommand}}
+      - name: Build project
+        run: {{buildCommand}}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: adonis-build
+          path: build/
+          retention-days: 7
+      {{/if}}
+
+      - name: Success Summary
+        if: success()
+        run: |
+          echo "### ✅ AdonisJS CI Pipeline Success" >> $GITHUB_STEP_SUMMARY
+          echo "AdonisJS application built and verified successfully." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Phase | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Checkout | Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Install | Passed |" >> $GITHUB_STEP_SUMMARY
+          {{#if lintCommand}}
+          echo "| Lint | Passed |" >> $GITHUB_STEP_SUMMARY
+          {{/if}}
+          {{#if typecheckCommand}}
+          echo "| Typecheck | Passed |" >> $GITHUB_STEP_SUMMARY
+          {{/if}}
+          {{#if testCommand}}
+          echo "| Tests | Passed |" >> $GITHUB_STEP_SUMMARY
+          {{/if}}
+          {{#if buildCommand}}
+          echo "| Build Output | Generated |" >> $GITHUB_STEP_SUMMARY
+          {{/if}}
+
+      - name: Failure Summary
+        if: failure()
+        run: |
+          echo "### ❌ AdonisJS CI Pipeline Failed" >> $GITHUB_STEP_SUMMARY
+          echo "Please review AdonisJS compilation or test execution logs." >> $GITHUB_STEP_SUMMARY
+
 {{#if telegramNotifications}}
-  - name: Send Telegram Success Notification if: success() run: | curl -s -X POST
-  https://api.telegram.org/bot$\{{ vars.TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_BOT_TOKEN
-  }}/sendMessage \ -d chat_id=$\{{ vars.TELEGRAM_CHAT_ID || secrets.TELEGRAM_CHAT_ID }} \ -d
-  text="✅ *CI/CD Pipeline Success* %0A*Repository:* $\{{ github.repository }} %0A*Branch:* $\{{
-  github.ref_name }} %0A*Commit:* $\{{ github.sha }}" \ -d parse_mode="Markdown" - name: Send
-  Telegram Failure Notification if: failure() run: | curl -s -X POST https://api.telegram.org/bot$\{{
-  vars.TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \ -d chat_id=$\{{
-  vars.TELEGRAM_CHAT_ID || secrets.TELEGRAM_CHAT_ID }} \ -d text="❌ *CI/CD Pipeline Failed*
-  %0A*Repository:* $\{{ github.repository }} %0A*Branch:* $\{{ github.ref_name }} %0A*Commit:* $\{{
-  github.sha }}" \ -d parse_mode="Markdown"
+      - name: Send Telegram Success Notification
+        if: success()
+        run: |
+          curl -s -X POST https://api.telegram.org/bot$\{{ vars.TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=$\{{ vars.TELEGRAM_CHAT_ID || secrets.TELEGRAM_CHAT_ID }} \
+            -d text="✅ *CI/CD Pipeline Success* %0A*Repository:* $\{{ github.repository }} %0A*Branch:* $\{{ github.ref_name }} %0A*Commit:* $\{{ github.sha }}" \
+            -d parse_mode="Markdown"
+
+      - name: Send Telegram Failure Notification
+        if: failure()
+        run: |
+          curl -s -X POST https://api.telegram.org/bot$\{{ vars.TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=$\{{ vars.TELEGRAM_CHAT_ID || secrets.TELEGRAM_CHAT_ID }} \
+            -d text="❌ *CI/CD Pipeline Failed* %0A*Repository:* $\{{ github.repository }} %0A*Branch:* $\{{ github.ref_name }} %0A*Commit:* $\{{ github.sha }}" \
+            -d parse_mode="Markdown"
 {{/if}}

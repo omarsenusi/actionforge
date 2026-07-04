@@ -1,6 +1,6 @@
 {
   "name": "actionforge",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Generate professional GitHub Actions workflows automatically for modern frameworks.",
   "type": "module",
   "main": "./dist/cli.js",
@@ -21,7 +21,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"templates/**/*.hbs\"",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "prepare": "husky"
   },
   "keywords": [
