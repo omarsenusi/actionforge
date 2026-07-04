@@ -62,6 +62,9 @@ actionforge generate --framework next --pm pnpm --node 22
 - `--no-typecheck`: Exclude typescript check step
 - `--no-test`: Exclude test execution step
 - `--no-build`: Exclude build compilation step
+- `--telegram`: Enable Telegram notifications for CI build status
+- `--deploy`: Generate PM2 ecosystem config and CD deploy workflow
+- `--runner <runner>`: Runner type (`github` for GitHub-hosted `ubuntu-latest`, `self-hosted` for private runners)
 
 ### 3. Setup Diagnostics (`actionforge doctor`)
 
@@ -130,6 +133,33 @@ nano /home/ubuntu/apps/<app_name>/shared/.env
 ```
 
 Once configured, every code merge to `main` will compile, pack, upload, install production dependencies, symlink uploads/logs/.env, update the `current` symlink, and reload PM2 automatically!
+
+### 💻 Local Deployment Alternative (`deploy.sh`)
+
+If you wish to deploy manually from your development machine (without relying on GitHub Actions CI/CD workflows, or to bypass GitHub billing/spending limits), ActionForge automatically generates a cross-platform deployment script named `deploy.sh` at the root of your project.
+
+To use the local script:
+
+1. Add the following connection variables to your local `.env` or create a `.env.deploy` file at the root of your project:
+   ```env
+   DEPLOY_HOST="your_server_ip_or_domain"
+   DEPLOY_SSH_KEY_PATH="~/.ssh/id_rsa"        # Path to your local private SSH key
+   DEPLOY_USERNAME="ubuntu"                   # SSH username
+   DEPLOY_PORT="22"                           # SSH port
+   DEPLOY_APP_NAME="DevBool"                  # Application name
+   DEPLOY_PATH="/home/ubuntu/apps"            # App deployment path
+
+   # Optional Telegram notifications
+   TELEGRAM_BOT_TOKEN="your_bot_token"
+   TELEGRAM_CHAT_ID="your_chat_id"
+   ```
+
+2. Run the deployment script from your terminal:
+   ```bash
+   ./deploy.sh   # Or: bash deploy.sh
+   ```
+
+*Note: On Windows, run the script within **Git Bash** (which comes pre-installed with Git).*
 
 ---
 

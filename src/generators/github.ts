@@ -4,6 +4,7 @@ import {
   readAndCompileTemplate,
   readAndCompileDeployTemplate,
   readAndCompilePMEcosystemTemplate,
+  readAndCompileDeployShellTemplate,
 } from '../utils/template.js';
 import { getPlugin } from '../services/plugin.js';
 import type { DetectionResult } from '../types/index.js';
@@ -84,6 +85,33 @@ export async function generatePMEcosystem(
   const jsContent = await readAndCompilePMEcosystemTemplate(variables);
   const outputPath = path.join(projectDir, 'ecosystem.config.js');
   await fs.writeFile(outputPath, jsContent, 'utf-8');
+
+  return outputPath;
+}
+
+export async function generateDeployShellScript(
+  projectDir: string,
+  detection: DetectionResult
+): Promise<string> {
+  const plugin = getPlugin(detection.framework);
+  const commands = plugin.getCommands(detection.packageManager, detection.hasTsConfig);
+
+  const variables = {
+    appName: detection.appName || 'devbool',
+    deployPath: detection.deployPath || '/home/ubuntu/apps',
+    installCommand: commands.install,
+    buildCommand: detection.hasBuildScript ? commands.build : 'npm run build',
+  };
+
+  const shContent = await readAndCompileDeployShellTemplate(variables);
+  const outputPath = path.join(projectDir, 'deploy.sh');
+  await fs.writeFile(outputPath, shContent, 'utf-8');
+
+  try {
+    await fs.chmod(outputPath, 0o755);
+  } catch {
+    // Ignore chmod errors on Windows
+  }
 
   return outputPath;
 }

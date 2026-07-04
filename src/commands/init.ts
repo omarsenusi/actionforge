@@ -160,15 +160,19 @@ export async function initCommand(): Promise<void> {
     if (customizedDetection.generateDeploy) {
       const deploySpinner = ora('Generating CD deployment files...').start();
       try {
-        const { generateDeployWorkflow, generatePMEcosystem } =
+        const { generateDeployWorkflow, generatePMEcosystem, generateDeployShellScript } =
           await import('../generators/github.js');
         const deployPathFile = await generateDeployWorkflow(projectDir, customizedDetection);
         const ecoPathFile = await generatePMEcosystem(projectDir, customizedDetection);
-        deploySpinner.succeed('CD deployment and PM2 config files generated successfully!');
+        const shPathFile = await generateDeployShellScript(projectDir, customizedDetection);
+        deploySpinner.succeed(
+          'CD deployment, PM2 config, and local deploy script generated successfully!'
+        );
         logger.success(`Created deploy workflow at: ${path.relative(projectDir, deployPathFile)}`);
         logger.success(
           `Created PM2 ecosystem config at: ${path.relative(projectDir, ecoPathFile)}`
         );
+        logger.success(`Created local deploy script at: ${path.relative(projectDir, shPathFile)}`);
 
         console.log('\n======================================================');
         logger.info('🚀 Deployment Setup Guide:');
@@ -185,6 +189,12 @@ export async function initCommand(): Promise<void> {
         );
         logger.info(
           `And place your production .env file at: ${customizedDetection.deployPath}/${customizedDetection.appName}/shared/.env`
+        );
+        logger.info('\n💻 Local Deployment Alternative:');
+        logger.info('You can also deploy manually from your terminal using:');
+        logger.info('  ./deploy.sh  (or: bash deploy.sh)');
+        logger.info(
+          'Ensure your local .env contains DEPLOY_HOST, DEPLOY_SSH_KEY_PATH, and DEPLOY_USERNAME.'
         );
         console.log('======================================================\n');
       } catch (err: any) {

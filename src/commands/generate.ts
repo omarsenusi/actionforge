@@ -1,7 +1,12 @@
 import ora from 'ora';
 import path from 'path';
 import { runAllDetectors } from '../detectors/index.js';
-import { generateGitHubWorkflow } from '../generators/github.js';
+import {
+  generateGitHubWorkflow,
+  generateDeployWorkflow,
+  generatePMEcosystem,
+  generateDeployShellScript,
+} from '../generators/github.js';
 import { logger } from '../utils/logger.js';
 import type { DetectionResult, Framework, PackageManager } from '../types/index.js';
 
@@ -75,15 +80,17 @@ export async function generateCommand(options: GenerateOptions): Promise<void> {
     if (customizedDetection.generateDeploy) {
       const deploySpinner = ora('Generating CD deployment files...').start();
       try {
-        const { generateDeployWorkflow, generatePMEcosystem } =
-          await import('../generators/github.js');
         const deployPathFile = await generateDeployWorkflow(projectDir, customizedDetection);
         const ecoPathFile = await generatePMEcosystem(projectDir, customizedDetection);
-        deploySpinner.succeed('CD deployment and PM2 config files generated successfully!');
+        const shPathFile = await generateDeployShellScript(projectDir, customizedDetection);
+        deploySpinner.succeed(
+          'CD deployment, PM2 config, and local deploy script generated successfully!'
+        );
         logger.success(`Created deploy workflow at: ${path.relative(projectDir, deployPathFile)}`);
         logger.success(
           `Created PM2 ecosystem config at: ${path.relative(projectDir, ecoPathFile)}`
         );
+        logger.success(`Created local deploy script at: ${path.relative(projectDir, shPathFile)}`);
       } catch (err: any) {
         deploySpinner.fail('Failed to generate deployment files.');
         logger.error(err.message || err);

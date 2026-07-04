@@ -70,3 +70,18 @@ export async function readAndCompilePMEcosystemTemplate(
   const template = Handlebars.compile(source);
   return template(data);
 }
+
+export async function readAndCompileDeployShellTemplate(
+  data: Record<string, any>
+): Promise<string> {
+  const templatesDir = getTemplatesDir();
+  const templatePath = path.join(templatesDir, 'pm2', 'deploy_sh.hbs');
+
+  if (!(await fs.pathExists(templatePath))) {
+    throw new Error(`PM2 deploy shell template not found at path: ${templatePath}`);
+  }
+
+  const source = await fs.readFile(templatePath, 'utf-8');
+  const template = Handlebars.compile(source);
+  return template(data);
+}

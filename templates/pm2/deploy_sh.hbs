@@ -1,0 +1,130 @@
+#!/bin/bash
+
+# Load environment variables
+if [ -f .env.deploy ]; then
+  export $(grep -v '^#' .env.deploy | xargs)
+elif [ -f .env ]; then
+  export $(grep -v '^#' .env | xargs)
+fi
+
+# Fallback values
+HOST=${DEPLOY_HOST:-$HOST}
+PORT=${DEPLOY_PORT:-${PORT:-22}}
+USERNAME=${DEPLOY_USERNAME:-${USERNAME:-ubuntu}}
+SSH_KEY_PATH=${DEPLOY_SSH_KEY_PATH:-$SSH_KEY_PATH}
+DEPLOY_PATH=${DEPLOY_PATH:-/home/ubuntu/apps}
+APP_NAME=${DEPLOY_APP_NAME:-{{appName}}}
+TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-$TELEGRAM_TOKEN}
+TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+
+# Validation
+if [ -z "$HOST" ] || [ -z "$USERNAME" ] || [ -z "$SSH_KEY_PATH" ]; then
+  echo "❌ Error: Missing deployment configuration."
+  echo "Please define DEPLOY_HOST, DEPLOY_SSH_KEY_PATH, and DEPLOY_USERNAME in your .env or .env.deploy file."
+  exit 1
+fi
+
+# Helper to send Telegram notification
+send_telegram() {
+  local status=$1
+  if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+    local status_emoji="🚀"
+    local status_text="CD Deployment Success"
+    if [ "$status" != "success" ]; then
+      status_emoji="❌"
+      status_text="CD Deployment Failed"
+    fi
+    local text="${status_emoji} *${status_text}* %0A*App:* ${APP_NAME} (Local Deploy)"
+    curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+      -d chat_id="${TELEGRAM_CHAT_ID}" \
+      -d text="${text}" \
+      -d parse_mode="Markdown" > /dev/null
+  fi
+}
+
+echo "🏗️  1. Building application locally..."
+{{buildCommand}}
+if [ $? -ne 0 ]; then
+  echo "❌ Build failed!"
+  send_telegram "failure"
+  exit 1
+fi
+
+echo "📦 2. Archiving build folder..."
+rm -f build.tar.gz
+cd build && tar -czf ../build.tar.gz . && cd ..
+if [ $? -ne 0 ]; then
+  echo "❌ Archiving failed!"
+  send_telegram "failure"
+  exit 1
+fi
+
+echo "🚀 3. Uploading archive and PM2 config via SCP..."
+scp -P "$PORT" -i "$SSH_KEY_PATH" build.tar.gz ecosystem.config.js "$USERNAME@$HOST:$DEPLOY_PATH/$APP_NAME/"
+if [ $? -ne 0 ]; then
+  echo "❌ Upload failed!"
+  send_telegram "failure"
+  exit 1
+fi
+
+echo "🔧 4. Executing remote deployment script via SSH..."
+ssh -p "$PORT" -i "$SSH_KEY_PATH" "$USERNAME@$HOST" "bash -s" << EOF
+  RELEASE_NAME=\$(date +%Y%m%d-%H%M%S)
+  RELEASE_PATH="${DEPLOY_PATH}/${APP_NAME}/releases/\${RELEASE_NAME}"
+  SHARED_PATH="${DEPLOY_PATH}/${APP_NAME}/shared"
+  CURRENT_PATH="${DEPLOY_PATH}/${APP_NAME}/current"
+
+  echo "🚀 Starting remote release: \${RELEASE_NAME}"
+  mkdir -p "\${RELEASE_PATH}"
+  mkdir -p "\${SHARED_PATH}/uploads"
+  mkdir -p "\${SHARED_PATH}/logs"
+
+  # Extract release archive
+  tar -xzf "${DEPLOY_PATH}/${APP_NAME}/build.tar.gz" -C "\${RELEASE_PATH}"
+  rm "${DEPLOY_PATH}/${APP_NAME}/build.tar.gz"
+
+  # Symlink shared files
+  if [ -f "\${SHARED_PATH}/.env" ]; then
+    ln -sfn "\${SHARED_PATH}/.env" "\${RELEASE_PATH}/.env"
+  fi
+  
+  # Smart uploads linking
+  if [ -d "\${RELEASE_PATH}/public" ]; then
+    mkdir -p "\${RELEASE_PATH}/public"
+    ln -sfn "\${SHARED_PATH}/uploads" "\${RELEASE_PATH}/public/uploads"
+    echo "✅ Symlinked shared uploads to public/uploads"
+  else
+    ln -sfn "\${SHARED_PATH}/uploads" "\${RELEASE_PATH}/uploads"
+    echo "✅ Symlinked shared uploads to root uploads"
+  fi
+  ln -sfn "\${SHARED_PATH}/logs" "\${RELEASE_PATH}/logs"
+
+  # Install production dependencies
+  echo "📥 Installing production dependencies..."
+  cd "\${RELEASE_PATH}"
+  {{installCommand}} --omit=dev
+
+  # Update current symlink
+  ln -sfn "\${RELEASE_PATH}" "\${CURRENT_PATH}"
+
+  # Reload server using PM2
+  echo "🔄 Restarting service with PM2..."
+  cd "${DEPLOY_PATH}/${APP_NAME}"
+  pm2 startOrReload ecosystem.config.js --update-env
+
+  # Clean up old releases
+  echo "🧹 Cleaning up old releases..."
+  cd "${DEPLOY_PATH}/${APP_NAME}/releases"
+  ls -t | tail -n +6 | xargs -r rm -rf
+
+  echo "✅ Remote deployment completed successfully!"
+EOF
+
+if [ $? -ne 0 ]; then
+  echo "❌ Remote deployment failed!"
+  send_telegram "failure"
+  exit 1
+fi
+
+echo "✅ Deployment completed successfully!"
+send_telegram "success"
