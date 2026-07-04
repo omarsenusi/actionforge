@@ -23,8 +23,6 @@ USERNAME="${DEPLOY_USERNAME:-${USERNAME:-ubuntu}}"
 DEPLOY_PATH="${DEPLOY_PATH:-/home/ubuntu/apps}"
 DEFAULT_APP_NAME="{{appName}}"
 APP_NAME="${DEPLOY_APP_NAME:-$DEFAULT_APP_NAME}"
-TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-$TELEGRAM_TOKEN}"
-TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID}"
 RELEASE_NAME=$(date +%Y%m%d-%H%M%S)
 
 # SSH Key handling (supports both raw key content and file path)
@@ -44,54 +42,11 @@ if [ -z "$HOST" ] || [ -z "$USERNAME" ] || [ -z "$SSH_KEY_PATH" ]; then
   exit 1
 fi
 
-# Helper to send Telegram notification
-send_telegram() {
-  local status=$1
-  if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
-    # Resolve emojis using printf to ensure correct encoding on all environments
-    local emoji_sparkles=$(printf '\U00002728')
-    local emoji_rocket=$(printf '\U0001F680')
-    local emoji_cross=$(printf '\U0000274C')
-    local emoji_check=$(printf '\U00002705')
-    local emoji_mobile=$(printf '\U0001F4F1')
-    local emoji_label=$(printf '\U0001F3F7')
-    local emoji_monitor=$(printf '\U0001F5A5')
-    local emoji_folder=$(printf '\U0001F4C2')
-    local emoji_party=$(printf '\U0001F389')
-    local emoji_warning=$(printf '\U000026A0')
-
-    local status_emoji="${emoji_rocket}"
-    local status_text="Local Deployment Success"
-    if [ "$status" != "success" ]; then
-      status_emoji="${emoji_cross}"
-      status_text="Local Deployment Failed"
-    fi
-    
-    local text="${emoji_sparkles} *ActionForge CD Notification* ${emoji_sparkles}%0A%0A"
-    text+="${status_emoji} *Status:* ${status_text}%0A"
-    text+="${emoji_mobile} *App:* \`${APP_NAME}\`%0A"
-    text+="${emoji_label} *Release:* \`${RELEASE_NAME}\`%0A"
-    text+="${emoji_monitor} *Host:* \`${HOST}\`%0A"
-    text+="${emoji_folder} *Path:* \`${DEPLOY_PATH}/${APP_NAME}\`%0A%0A"
-    
-    if [ "$status" = "success" ]; then
-      text+="${emoji_party} *Application has been successfully deployed and reloaded with PM2!*"
-    else
-      text+="${emoji_warning} *An error occurred during execution. Please check terminal logs.*"
-    fi
-
-    curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-      -d chat_id="${TELEGRAM_CHAT_ID}" \
-      -d parse_mode="Markdown" \
-      --data-urlencode "text=${text}" > /dev/null
-  fi
-}
-
 echo "🏗️  1. Building application locally..."
 {{buildCommand}}
 if [ $? -ne 0 ]; then
   echo "❌ Build failed!"
-  send_telegram "failure"
+  node deploy/notify.js failure "${RELEASE_NAME}"
   exit 1
 fi
 
@@ -100,7 +55,7 @@ rm -f build.tar.gz
 cd build && tar -czf ../build.tar.gz . && cd ..
 if [ $? -ne 0 ]; then
   echo "❌ Archiving failed!"
-  send_telegram "failure"
+  node deploy/notify.js failure "${RELEASE_NAME}"
   exit 1
 fi
 
@@ -108,9 +63,12 @@ echo "🚀 3. Uploading archive and PM2 config via SCP..."
 scp -P "$PORT" -i "$SSH_KEY_PATH" build.tar.gz ecosystem.config.js "$USERNAME@$HOST:$DEPLOY_PATH/$APP_NAME/"
 if [ $? -ne 0 ]; then
   echo "❌ Upload failed!"
-  send_telegram "failure"
+  node deploy/notify.js failure "${RELEASE_NAME}"
   exit 1
 fi
+
+# Delete local build archive after upload completes successfully
+rm -f build.tar.gz
 
 echo "🔧 4. Executing remote deployment script via SSH..."
 ssh -p "$PORT" -i "$SSH_KEY_PATH" "$USERNAME@$HOST" "bash -s" << EOF
@@ -177,9 +135,9 @@ EOF
 
 if [ $? -ne 0 ]; then
   echo "❌ Remote deployment failed!"
-  send_telegram "failure"
+  node deploy/notify.js failure "${RELEASE_NAME}"
   exit 1
 fi
 
 echo "✅ Deployment completed successfully!"
-send_telegram "success"
+node deploy/notify.js success "${RELEASE_NAME}"

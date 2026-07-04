@@ -1,0 +1,80 @@
+import fs from 'fs';
+import path from 'path';
+import https from 'https';
+
+// Load variables from deploy/.env.deploy or similar
+const envPaths = [
+  'deploy/.env.deploy',
+  'deploy/.env',
+  '.env.deploy',
+  '.env'
+];
+
+let env = {};
+for (const envPath of envPaths) {
+  if (fs.existsSync(envPath)) {
+    const content = fs.readFileSync(envPath, 'utf-8');
+    content.split(/\r?\n/).forEach(line => {
+      if (line && !line.startsWith('#') && line.includes('=')) {
+        const [key, ...valParts] = line.split('=');
+        const val = valParts.join('=').trim().replace(/^["']|["']$/g, '');
+        env[key.trim()] = val;
+      }
+    });
+    break;
+  }
+}
+
+const token = env.TELEGRAM_BOT_TOKEN || env.TELEGRAM_TOKEN;
+const chatId = env.TELEGRAM_CHAT_ID;
+const appName = env.DEPLOY_APP_NAME || env.APP_NAME || '{{appName}}';
+const host = env.DEPLOY_HOST || env.HOST;
+const deployPath = env.DEPLOY_PATH || '/home/ubuntu/apps';
+
+if (!token || !chatId) {
+  process.exit(0);
+}
+
+const status = process.argv[2] || 'success';
+const releaseName = process.argv[3] || 'N/A';
+
+const statusEmoji = status === 'success' ? '🚀' : '❌';
+const statusText = status === 'success' ? 'Local Deployment Success' : 'Local Deployment Failed';
+
+let text = `✨ *ActionForge CD Notification* ✨\n\n`;
+text += `${statusEmoji} *Status:* ${statusText}\n`;
+text += `📱 *App:* \`${appName}\`\n`;
+text += `🏷️ *Release:* \`${releaseName}\`\n`;
+text += `🖥️ *Host:* \`${host || 'N/A'}\`\n`;
+text += `📂 *Path:* \`${deployPath}/${appName}\`\n\n`;
+
+if (status === 'success') {
+  text += `🎉 *Application has been successfully deployed and reloaded with PM2!*`;
+} else {
+  text += `⚠️ *An error occurred during execution. Please check terminal logs.*`;
+}
+
+const payload = JSON.stringify({
+  chat_id: chatId,
+  text: text,
+  parse_mode: 'Markdown'
+});
+
+const req = https.request(
+  `https://api.telegram.org/bot${token}/sendMessage`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(payload, 'utf-8')
+    }
+  },
+  (res) => {
+    res.on('data', () => {});
+    res.on('end', () => process.exit(0));
+  }
+);
+
+req.on('error', () => process.exit(1));
+req.write(payload);
+req.end();
