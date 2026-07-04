@@ -53,6 +53,11 @@ async function main() {
     .option('--no-test', 'Exclude Test script check')
     .option('--no-build', 'Exclude Build script check')
     .option('--telegram', 'Enable Telegram notifications for CI build status')
+    .option('--deploy', 'Generate PM2 ecosystem config and CD deploy workflow')
+    .option('--app-name <name>', 'Application name for PM2 config')
+    .option('--deploy-path <path>', 'Deployment folder path on remote server')
+    .option('--script-path <path>', 'Script entrypoint relative to release root')
+    .option('--port <port>', 'Application execution port')
     .action(async (options) => {
       try {
         await generateCommand(options);

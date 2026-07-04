@@ -1,0 +1,52 @@
+name: Deploy Application on: push: branches: [ main, master ] workflow_dispatch: jobs: deploy: name:
+Deploy to Server runs-on: ubuntu-latest steps: - name: Checkout repository uses: actions/checkout@v4
+
+{{#if (eq packageManager 'pnpm')}}
+  - name: Setup pnpm uses: pnpm/action-setup@v3 with: version: 9
+{{/if}}
+
+{{#if (eq packageManager 'bun')}}
+  - name: Setup Bun uses: oven-sh/setup-bun@v2 with: bun-version: latest
+{{/if}}
+
+- name: Setup Node.js uses: actions/setup-node@v4 with: node-version: '{{nodeVersion}}'
+{{#if (eq packageManager 'npm')}}
+  cache: 'npm'
+{{/if}}
+{{#if (eq packageManager 'pnpm')}}
+  cache: 'pnpm'
+{{/if}}
+{{#if (eq packageManager 'yarn')}}
+  cache: 'yarn'
+{{/if}}
+
+- name: Install dependencies run:
+{{installCommand}}
+
+- name: Build application run:
+{{buildCommand}}
+
+- name: Create deployment package run: | cd build && tar -czf ../build.tar.gz . - name: Copy files
+to Server via SCP uses: appleboy/scp-action@master with: host: $\{{ secrets.SERVER_HOST }} username:
+$\{{ secrets.SERVER_USER }} key: $\{{ secrets.SSH_PRIVATE_KEY }} port: 22 source:
+"build.tar.gz,ecosystem.config.js" target: "{{deployPath}}/{{appName}}" - name: Execute remote SSH
+deployment commands uses: appleboy/ssh-action@master with: host: $\{{ secrets.SERVER_HOST }}
+username: $\{{ secrets.SERVER_USER }} key: $\{{ secrets.SSH_PRIVATE_KEY }} port: 22 script: |
+APP_NAME="{{appName}}" DEPLOY_PATH="{{deployPath}}" RELEASE_NAME=$(date +%Y%m%d-%H%M%S)
+RELEASE_PATH="${DEPLOY_PATH}/${APP_NAME}/releases/${RELEASE_NAME}"
+SHARED_PATH="${DEPLOY_PATH}/${APP_NAME}/shared" CURRENT_PATH="${DEPLOY_PATH}/${APP_NAME}/current"
+echo "🚀 Starting release: ${RELEASE_NAME}" mkdir -p ${RELEASE_PATH} mkdir -p ${SHARED_PATH}/uploads
+mkdir -p ${SHARED_PATH}/logs # Extract release archive echo "📦 Extracting release archive..." tar
+-xzf ${DEPLOY_PATH}/${APP_NAME}/build.tar.gz -C ${RELEASE_PATH} rm
+${DEPLOY_PATH}/${APP_NAME}/build.tar.gz # Symlink shared files echo "🔗 Linking shared assets..." if
+[ -f "${SHARED_PATH}/.env" ]; then ln -sfn ${SHARED_PATH}/.env ${RELEASE_PATH}/.env else echo "⚠️
+Warning: No .env file found in shared directory. Please create one at ${SHARED_PATH}/.env" fi ln
+-sfn ${SHARED_PATH}/uploads ${RELEASE_PATH}/uploads ln -sfn ${SHARED_PATH}/logs ${RELEASE_PATH}/logs
+# Install production dependencies echo "📥 Installing production dependencies..." cd ${RELEASE_PATH}
+{{installCommand}}
+--omit=dev # Update current symlink echo "🔄 Updating current symlink..." ln -sfn ${RELEASE_PATH}
+${CURRENT_PATH} # Reload server using PM2 echo "🔄 Starting/Reloading PM2 service..." cd
+${DEPLOY_PATH}/${APP_NAME} pm2 startOrReload ecosystem.config.js --update-env # Clean up old
+releases echo "🧹 Cleaning up old releases (keeping last 5)..." cd
+${DEPLOY_PATH}/${APP_NAME}/releases ls -t | tail -n +6 | xargs -r rm -rf echo "✅ Deployment
+completed successfully!"

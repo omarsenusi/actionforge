@@ -1,0 +1,4 @@
+module.exports = { apps: [ { name: '{{appName}}', cwd: '{{deployPath}}/{{appName}}/current', script:
+'./{{scriptPath}}', instances: 1, exec_mode: 'fork', autorestart: true, watch: false, env: {
+NODE_ENV: 'production', ENV_PATH: '{{deployPath}}/{{appName}}/current', PORT:
+{{port}}, HOST: '0.0.0.0' } } ] }

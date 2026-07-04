@@ -42,3 +42,31 @@ export async function readAndCompileTemplate(
   const template = Handlebars.compile(source);
   return template(data);
 }
+
+export async function readAndCompileDeployTemplate(data: Record<string, any>): Promise<string> {
+  const templatesDir = getTemplatesDir();
+  const templatePath = path.join(templatesDir, 'github', 'deploy.hbs');
+
+  if (!(await fs.pathExists(templatePath))) {
+    throw new Error(`Deploy template not found at path: ${templatePath}`);
+  }
+
+  const source = await fs.readFile(templatePath, 'utf-8');
+  const template = Handlebars.compile(source);
+  return template(data);
+}
+
+export async function readAndCompilePMEcosystemTemplate(
+  data: Record<string, any>
+): Promise<string> {
+  const templatesDir = getTemplatesDir();
+  const templatePath = path.join(templatesDir, 'pm2', 'ecosystem.hbs');
+
+  if (!(await fs.pathExists(templatePath))) {
+    throw new Error(`PM2 ecosystem template not found at path: ${templatePath}`);
+  }
+
+  const source = await fs.readFile(templatePath, 'utf-8');
+  const template = Handlebars.compile(source);
+  return template(data);
+}

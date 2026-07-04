@@ -11,6 +11,11 @@ export interface DetectionResult {
   hasLintScript: boolean;
   hasBuildScript: boolean;
   telegramNotifications?: boolean;
+  appName?: string | undefined;
+  deployPath?: string | undefined;
+  scriptPath?: string | undefined;
+  port?: string | undefined;
+  generateDeploy?: boolean | undefined;
 }
 
 export interface FrameworkPlugin {

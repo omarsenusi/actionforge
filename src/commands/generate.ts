@@ -14,6 +14,11 @@ export interface GenerateOptions {
   test?: boolean;
   build?: boolean;
   telegram?: boolean;
+  deploy?: boolean;
+  appName?: string;
+  deployPath?: string;
+  scriptPath?: string;
+  port?: string;
 }
 
 export async function generateCommand(options: GenerateOptions): Promise<void> {
@@ -52,6 +57,11 @@ export async function generateCommand(options: GenerateOptions): Promise<void> {
     hasLintScript: options.lint !== undefined ? options.lint : detection.hasLintScript,
     hasBuildScript: options.build !== undefined ? options.build : detection.hasBuildScript,
     telegramNotifications: options.telegram || false,
+    generateDeploy: options.deploy || false,
+    appName: options.appName,
+    deployPath: options.deployPath,
+    scriptPath: options.scriptPath,
+    port: options.port,
   };
 
   const genSpinner = ora(`Generating CI workflow for ${customizedDetection.framework}...`).start();
@@ -59,6 +69,24 @@ export async function generateCommand(options: GenerateOptions): Promise<void> {
     const outputPath = await generateGitHubWorkflow(projectDir, customizedDetection);
     genSpinner.succeed('GitHub Actions workflow generated successfully!');
     logger.success(`Created workflow file at: ${path.relative(projectDir, outputPath)}`);
+
+    if (customizedDetection.generateDeploy) {
+      const deploySpinner = ora('Generating CD deployment files...').start();
+      try {
+        const { generateDeployWorkflow, generatePMEcosystem } =
+          await import('../generators/github.js');
+        const deployPathFile = await generateDeployWorkflow(projectDir, customizedDetection);
+        const ecoPathFile = await generatePMEcosystem(projectDir, customizedDetection);
+        deploySpinner.succeed('CD deployment and PM2 config files generated successfully!');
+        logger.success(`Created deploy workflow at: ${path.relative(projectDir, deployPathFile)}`);
+        logger.success(
+          `Created PM2 ecosystem config at: ${path.relative(projectDir, ecoPathFile)}`
+        );
+      } catch (err: any) {
+        deploySpinner.fail('Failed to generate deployment files.');
+        logger.error(err.message || err);
+      }
+    }
   } catch (err: any) {
     genSpinner.fail('Failed to generate workflow.');
     logger.error(err.message || err);
