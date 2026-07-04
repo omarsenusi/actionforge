@@ -54,6 +54,7 @@ actionforge generate --framework next --pm pnpm --node 22
 ```
 
 **Options:**
+
 - `-f, --framework <framework>`: Framework choice (`next`, `nest`, `adonis`, `express`, `fastify`, `node`)
 - `-p, --pm <packageManager>`: Package manager (`npm`, `pnpm`, `yarn`, `bun`)
 - `-n, --node <version>`: Node.js runner version (e.g. `20`, `22`)
@@ -72,16 +73,76 @@ actionforge doctor
 
 ---
 
+## 🔔 Telegram Notifications
+
+If you enable Telegram notifications, ActionForge appends steps to your workflows that call the Telegram Bot API using shell `curl` commands to alert you when a CI build or CD deployment succeeds or fails.
+
+### GitHub Repository Secrets Needed
+
+To make notifications work, go to your GitHub repository **Settings > Secrets and variables > Actions** and add:
+
+1. `TELEGRAM_BOT_TOKEN`: The bot token obtained from Telegram's [@BotFather](https://t.me/BotFather).
+2. `TELEGRAM_CHAT_ID`: The unique chat ID (user ID, group ID, or channel ID) where notifications should be sent.
+
+---
+
+## 🚀 Continuous Deployment & PM2 Setup
+
+ActionForge can generate a zero-downtime, Capistrano-style deployment workflow (`.github/workflows/deploy.yml`) and a PM2 process manager configuration file (`ecosystem.config.js`).
+
+### Server Directory Structure
+
+The deployment workflow expects the following folder structure on your remote server:
+
+```
+/home/ubuntu/apps
+└── <app_name>
+    ├── current -> releases/20260704-090000  # Symlink to active release
+    ├── releases                             # Kept for rollbacks (keeps last 5)
+    │   ├── 20260703-220000
+    │   └── 20260704-090000
+    └── shared                               # Shared assets persistent across runs
+        ├── .env                             # Production environment file
+        ├── uploads                          # Shared upload directory (persistent)
+        └── logs                             # Shared log files
+```
+
+### GitHub Repository Secrets Needed
+
+To connect to your server and upload release assets, add the following Secrets to your GitHub repository:
+
+1. `HOST`: Your remote server IP or domain name.
+2. `PORT`: Your server SSH port (typically `22`).
+3. `USERNAME`: Your server SSH username (e.g., `ubuntu` or `root`).
+4. `SSH_KEY`: Your SSH Private Key matching the public key saved in `~/.ssh/authorized_keys` on the server.
+
+### First-Time Server Setup
+
+Before running the deployment workflow for the first time, SSH into your server and prepare the shared assets:
+
+```bash
+# 1. Create the persistent directories
+mkdir -p /home/ubuntu/apps/<app_name>/shared/uploads
+mkdir -p /home/ubuntu/apps/<app_name>/shared/logs
+
+# 2. Add your production environment file
+nano /home/ubuntu/apps/<app_name>/shared/.env
+```
+
+Once configured, every code merge to `main` will compile, pack, upload, install production dependencies, symlink uploads/logs/.env, update the `current` symlink, and reload PM2 automatically!
+
+---
+
 ## 📊 Framework Support Matrix
 
-| Framework | Lockfile Caching | Build Caching | Artifact Upload | Build Directory |
-| :--- | :---: | :---: | :---: | :---: |
-| **Node.js (Vanilla)** | Yes | No | Yes | `dist/` |
-| **NestJS** | Yes | No | Yes | `dist/` |
-| **AdonisJS** | Yes | No | Yes | `build/` |
-| **Next.js** | Yes | Yes (`.next/cache`) | Yes | `.next/` |
-| **Express** | Yes | No | Yes (Optional) | `dist/` |
-| **Fastify** | Yes | No | Yes (Optional) | `dist/` |
+| Framework             | Lockfile Caching |    Build Caching    | Artifact Upload | Build Directory |
+| :-------------------- | :--------------: | :-----------------: | :-------------: | :-------------: |
+| **Node.js (Vanilla)** |       Yes        |         No          |       Yes       |     `dist/`     |
+| **NestJS**            |       Yes        |         No          |       Yes       |     `dist/`     |
+| **AdonisJS**          |       Yes        |         No          |       Yes       |    `build/`     |
+| **Next.js**           |       Yes        | Yes (`.next/cache`) |       Yes       |    `.next/`     |
+| **Express**           |       Yes        |         No          | Yes (Optional)  |     `dist/`     |
+| **Fastify**           |       Yes        |         No          | Yes (Optional)  |     `dist/`     |
 
 ---
 
