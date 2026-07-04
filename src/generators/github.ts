@@ -54,6 +54,7 @@ export async function generateDeployWorkflow(
     deployPath: detection.deployPath || '/home/ubuntu/apps',
     scriptPath: detection.scriptPath || 'bin/server.js',
     port: detection.port || '3333',
+    telegramNotifications: detection.telegramNotifications,
   };
 
   const yamlContent = await readAndCompileDeployTemplate(variables);
