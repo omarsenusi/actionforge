@@ -1,6 +1,6 @@
 {
   "name": "actionforge",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "Generate professional GitHub Actions workflows automatically for modern frameworks.",
   "type": "module",
   "main": "./dist/cli.js",
