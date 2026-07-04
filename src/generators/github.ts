@@ -5,7 +5,6 @@ import {
   readAndCompileDeployTemplate,
   readAndCompilePMEcosystemTemplate,
   readAndCompileDeployShellTemplate,
-  readAndCompileDeployNotifyTemplate,
 } from '../utils/template.js';
 import { getPlugin } from '../services/plugin.js';
 import type { DetectionResult } from '../types/index.js';
@@ -119,12 +118,8 @@ export async function generateDeployShellScript(
 
   // Create .gitignore
   const gitignorePath = path.join(deployDir, '.gitignore');
-  const gitignoreContent = `# Ignore all files in this folder to protect secrets\n*\n# Allow tracking the script and configurations\n!.gitignore\n!deploy.sh\n!notify.js\n!*.example\n`;
+  const gitignoreContent = `# Ignore all files in this folder to protect secrets\n*\n# Allow tracking the script and configurations\n!.gitignore\n!deploy.sh\n!*.example\n`;
   await fs.writeFile(gitignorePath, gitignoreContent, 'utf-8');
-
-  // Create notify.js
-  const notifyContent = await readAndCompileDeployNotifyTemplate(variables);
-  await fs.writeFile(path.join(deployDir, 'notify.js'), notifyContent, 'utf-8');
 
   // Create .env.deploy if it doesn't exist
   const envPath = path.join(deployDir, '.env.deploy');

@@ -23,6 +23,8 @@ USERNAME="${DEPLOY_USERNAME:-${USERNAME:-ubuntu}}"
 DEPLOY_PATH="${DEPLOY_PATH:-/home/ubuntu/apps}"
 DEFAULT_APP_NAME="{{appName}}"
 APP_NAME="${DEPLOY_APP_NAME:-$DEFAULT_APP_NAME}"
+TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-$TELEGRAM_TOKEN}"
+TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID}"
 RELEASE_NAME=$(date +%Y%m%d-%H%M%S)
 
 # SSH Key handling (supports both raw key content and file path)
@@ -42,11 +44,47 @@ if [ -z "$HOST" ] || [ -z "$USERNAME" ] || [ -z "$SSH_KEY_PATH" ]; then
   exit 1
 fi
 
+# Helper to send Telegram notification
+send_telegram() {
+  local status=$1
+  if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+    local status_emoji="\ud83d\ude80"
+    local status_text="Local Deployment Success"
+    if [ "$status" != "success" ]; then
+      status_emoji="\u274c"
+      status_text="Local Deployment Failed"
+    fi
+    
+    local payload="{"
+    payload+="\"chat_id\": \"${TELEGRAM_CHAT_ID}\","
+    payload+="\"parse_mode\": \"Markdown\","
+    payload+="\"text\": \""
+    payload+="\u2728 *ActionForge CD Notification* \u2728\n\n"
+    payload+="${status_emoji} *Status:* ${status_text}\n"
+    payload+="\ud83d\udcf1 *App:* \`${APP_NAME}\`\n"
+    payload+="\ud83c\udff7 *Release:* \`${RELEASE_NAME}\`\n"
+    payload+="\ud83d\udda5 *Host:* \`${HOST}\`\n"
+    payload+="\ud83d\udcc2 *Path:* \`${DEPLOY_PATH}/${APP_NAME}\`\n\n"
+    
+    if [ "$status" = "success" ]; then
+      payload+="\ud83c\udf89 *Application has been successfully deployed and reloaded with PM2!*"
+    else
+      payload+="\u26a0 *An error occurred during execution. Please check terminal logs.*"
+    fi
+    payload+="\""
+    payload+="}"
+
+    curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+      -H "Content-Type: application/json" \
+      -d "${payload}" > /dev/null
+  fi
+}
+
 echo "🏗️  1. Building application locally..."
 {{buildCommand}}
 if [ $? -ne 0 ]; then
   echo "❌ Build failed!"
-  node deploy/notify.js failure "${RELEASE_NAME}"
+  send_telegram "failure"
   exit 1
 fi
 
@@ -55,7 +93,7 @@ rm -f build.tar.gz
 cd build && tar -czf ../build.tar.gz . && cd ..
 if [ $? -ne 0 ]; then
   echo "❌ Archiving failed!"
-  node deploy/notify.js failure "${RELEASE_NAME}"
+  send_telegram "failure"
   exit 1
 fi
 
@@ -63,7 +101,7 @@ echo "🚀 3. Uploading archive and PM2 config via SCP..."
 scp -P "$PORT" -i "$SSH_KEY_PATH" build.tar.gz ecosystem.config.js "$USERNAME@$HOST:$DEPLOY_PATH/$APP_NAME/"
 if [ $? -ne 0 ]; then
   echo "❌ Upload failed!"
-  node deploy/notify.js failure "${RELEASE_NAME}"
+  send_telegram "failure"
   exit 1
 fi
 
@@ -135,9 +173,9 @@ EOF
 
 if [ $? -ne 0 ]; then
   echo "❌ Remote deployment failed!"
-  node deploy/notify.js failure "${RELEASE_NAME}"
+  send_telegram "failure"
   exit 1
 fi
 
 echo "✅ Deployment completed successfully!"
-node deploy/notify.js success "${RELEASE_NAME}"
+send_telegram "success"
