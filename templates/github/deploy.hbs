@@ -56,14 +56,15 @@ ${DEPLOY_PATH}/${APP_NAME}/releases ls -t | tail -n +6 | xargs -r rm -rf echo "�
 completed successfully!"
 {{#if telegramNotifications}}
   - name: Send Telegram Success Notification if: success() run: | curl -s -X POST
-  https://api.telegram.org/bot$\{{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \ -d chat_id=$\{{
-  secrets.TELEGRAM_CHAT_ID }} \ -d text="🚀 *CD Deployment Success* %0A*Repository:* $\{{
+  https://api.telegram.org/bot$\{{ vars.TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_BOT_TOKEN
+  }}/sendMessage \ -d chat_id=$\{{ vars.TELEGRAM_CHAT_ID || secrets.TELEGRAM_CHAT_ID }} \ -d
+  text="🚀 *CD Deployment Success* %0A*Repository:* $\{{ github.repository }} %0A*Branch:* $\{{
+  github.ref_name }} %0A*Commit:* $\{{ github.sha }} %0A*App:*
+  {{appName}}" \ -d parse_mode="Markdown" - name: Send Telegram Failure Notification if: failure()
+  run: | curl -s -X POST https://api.telegram.org/bot$\{{ vars.TELEGRAM_BOT_TOKEN ||
+  secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \ -d chat_id=$\{{ vars.TELEGRAM_CHAT_ID ||
+  secrets.TELEGRAM_CHAT_ID }} \ -d text="❌ *CD Deployment Failed* %0A*Repository:* $\{{
   github.repository }} %0A*Branch:* $\{{ github.ref_name }} %0A*Commit:* $\{{ github.sha }}
   %0A*App:*
-  {{appName}}" \ -d parse_mode="Markdown" - name: Send Telegram Failure Notification if: failure()
-  run: | curl -s -X POST https://api.telegram.org/bot$\{{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
-  \ -d chat_id=$\{{ secrets.TELEGRAM_CHAT_ID }} \ -d text="❌ *CD Deployment Failed*
-  %0A*Repository:* $\{{ github.repository }} %0A*Branch:* $\{{ github.ref_name }} %0A*Commit:* $\{{
-  github.sha }} %0A*App:*
   {{appName}}" \ -d parse_mode="Markdown"
 {{/if}}
