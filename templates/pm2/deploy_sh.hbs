@@ -25,6 +25,7 @@ DEFAULT_APP_NAME="{{appName}}"
 APP_NAME="${DEPLOY_APP_NAME:-$DEFAULT_APP_NAME}"
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-$TELEGRAM_TOKEN}"
 TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID}"
+RELEASE_NAME=$(date +%Y%m%d-%H%M%S)
 
 # SSH Key handling (supports both raw key content and file path)
 if [ -n "$DEPLOY_SSH_KEY" ]; then
@@ -48,12 +49,25 @@ send_telegram() {
   local status=$1
   if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
     local status_emoji="🚀"
-    local status_text="CD Deployment Success"
+    local status_text="Local Deployment Success"
     if [ "$status" != "success" ]; then
       status_emoji="❌"
-      status_text="CD Deployment Failed"
+      status_text="Local Deployment Failed"
     fi
-    local text="${status_emoji} *${status_text}* %0A*App:* ${APP_NAME} (Local Deploy)"
+    
+    local text="✨ *ActionForge CD Notification* ✨%0A%0A"
+    text+="${status_emoji} *Status:* ${status_text}%0A"
+    text+="📱 *App:* \`${APP_NAME}\`%0A"
+    text+="🏷️ *Release:* \`${RELEASE_NAME}\`%0A"
+    text+="🖥️ *Host:* \`${HOST}\`%0A"
+    text+="📂 *Path:* \`${DEPLOY_PATH}/${APP_NAME}\`%0A%0A"
+    
+    if [ "$status" = "success" ]; then
+      text+="🎉 *Application has been successfully deployed and reloaded with PM2!*"
+    else
+      text+="⚠️ *An error occurred during execution. Please check terminal logs.*"
+    fi
+
     curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
       -d chat_id="${TELEGRAM_CHAT_ID}" \
       -d text="${text}" \
@@ -103,9 +117,8 @@ ssh -p "$PORT" -i "$SSH_KEY_PATH" "$USERNAME@$HOST" "bash -s" << EOF
   fi
   export PATH="\$PATH:\$HOME/.local/bin:\$HOME/bin"
 
-
-  RELEASE_NAME=\$(date +%Y%m%d-%H%M%S)
-  RELEASE_PATH="${DEPLOY_PATH}/${APP_NAME}/releases/\${RELEASE_NAME}"
+  RELEASE_NAME="${RELEASE_NAME}"
+  RELEASE_PATH="${DEPLOY_PATH}/${APP_NAME}/releases/${RELEASE_NAME}"
   SHARED_PATH="${DEPLOY_PATH}/${APP_NAME}/shared"
   CURRENT_PATH="${DEPLOY_PATH}/${APP_NAME}/current"
 

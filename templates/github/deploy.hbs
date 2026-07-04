@@ -142,16 +142,18 @@ jobs:
       - name: Send Telegram Success Notification
         if: success()
         run: |
+          TEXT="✨ *GitHub Actions CD Notification* ✨%0A%0A🚀 *Status:* CD Deployment Success%0A📱 *App:* \`{{appName}}\`%0A📦 *Repository:* \`$\{{ github.repository }}\`%0A🌿 *Branch:* \`$\{{ github.ref_name }}\`%0A🎯 *Commit:* \`$\{{ github.sha }}\`%0A🖥️ *Deployment Path:* \`{{deployPath}}/{{appName}}\`%0A%0A🎉 *The application has been successfully built, deployed, and reloaded with PM2!*"
           curl -s -X POST https://api.telegram.org/bot$\{{ vars.TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=$\{{ vars.TELEGRAM_CHAT_ID || secrets.TELEGRAM_CHAT_ID }} \
-            -d text="🚀 *CD Deployment Success* %0A*Repository:* $\{{ github.repository }} %0A*Branch:* $\{{ github.ref_name }} %0A*Commit:* $\{{ github.sha }} %0A*App:* {{appName}}" \
+            -d text="${TEXT}" \
             -d parse_mode="Markdown"
 
       - name: Send Telegram Failure Notification
         if: failure()
         run: |
+          TEXT="✨ *GitHub Actions CD Notification* ✨%0A%0A❌ *Status:* CD Deployment Failed%0A📱 *App:* \`{{appName}}\`%0A📦 *Repository:* \`$\{{ github.repository }}\`%0A🌿 *Branch:* \`$\{{ github.ref_name }}\`%0A🎯 *Commit:* \`$\{{ github.sha }}\`%0A🖥️ *Deployment Path:* \`{{deployPath}}/{{appName}}\`%0A%0A⚠️ *The deployment workflow has failed. Please check the GitHub Actions logs.*"
           curl -s -X POST https://api.telegram.org/bot$\{{ vars.TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
             -d chat_id=$\{{ vars.TELEGRAM_CHAT_ID || secrets.TELEGRAM_CHAT_ID }} \
-            -d text="❌ *CD Deployment Failed* %0A*Repository:* $\{{ github.repository }} %0A*Branch:* $\{{ github.ref_name }} %0A*Commit:* $\{{ github.sha }} %0A*App:* {{appName}}" \
+            -d text="${TEXT}" \
             -d parse_mode="Markdown"
 {{/if}}
