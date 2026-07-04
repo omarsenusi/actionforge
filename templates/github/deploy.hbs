@@ -70,6 +70,11 @@ jobs:
           key: $\{{ secrets.SSH_KEY }}
           port: $\{{ secrets.PORT }}
           script: |
+            # Load environment profile files to make Node/NVM/PM2 available in non-interactive sessions
+            for f in ~/.profile ~/.bashrc ~/.bash_profile; do
+              [ -f "$f" ] && . "$f"
+            done
+
             APP_NAME="{{appName}}"
             DEPLOY_PATH="{{deployPath}}"
             RELEASE_NAME=$(date +%Y%m%d-%H%M%S)

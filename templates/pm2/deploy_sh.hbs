@@ -88,6 +88,11 @@ fi
 
 echo "🔧 4. Executing remote deployment script via SSH..."
 ssh -p "$PORT" -i "$SSH_KEY_PATH" "$USERNAME@$HOST" "bash -s" << EOF
+  # Load environment profile files to make Node/NVM/PM2 available in non-interactive sessions
+  for f in ~/.profile ~/.bashrc ~/.bash_profile; do
+    [ -f "\$f" ] && . "\$f"
+  done
+
   RELEASE_NAME=\$(date +%Y%m%d-%H%M%S)
   RELEASE_PATH="${DEPLOY_PATH}/${APP_NAME}/releases/\${RELEASE_NAME}"
   SHARED_PATH="${DEPLOY_PATH}/${APP_NAME}/shared"
