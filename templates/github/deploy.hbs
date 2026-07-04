@@ -40,9 +40,13 @@ mkdir -p ${SHARED_PATH}/logs # Extract release archive echo "📦 Extracting rel
 -xzf ${DEPLOY_PATH}/${APP_NAME}/build.tar.gz -C ${RELEASE_PATH} rm
 ${DEPLOY_PATH}/${APP_NAME}/build.tar.gz # Symlink shared files echo "🔗 Linking shared assets..." if
 [ -f "${SHARED_PATH}/.env" ]; then ln -sfn ${SHARED_PATH}/.env ${RELEASE_PATH}/.env else echo "⚠️
-Warning: No .env file found in shared directory. Please create one at ${SHARED_PATH}/.env" fi ln
--sfn ${SHARED_PATH}/uploads ${RELEASE_PATH}/uploads ln -sfn ${SHARED_PATH}/logs ${RELEASE_PATH}/logs
-# Install production dependencies echo "📥 Installing production dependencies..." cd ${RELEASE_PATH}
+Warning: No .env file found in shared directory. Please create one at ${SHARED_PATH}/.env" fi #
+Smart uploads linking (links to public/uploads if public exists, otherwise root uploads) if [ -d
+"${RELEASE_PATH}/public" ]; then mkdir -p ${RELEASE_PATH}/public ln -sfn ${SHARED_PATH}/uploads
+${RELEASE_PATH}/public/uploads echo "✅ Symlinked shared uploads to public/uploads" else ln -sfn
+${SHARED_PATH}/uploads ${RELEASE_PATH}/uploads echo "✅ Symlinked shared uploads to root uploads" fi
+ln -sfn ${SHARED_PATH}/logs ${RELEASE_PATH}/logs # Install production dependencies echo "📥
+Installing production dependencies..." cd ${RELEASE_PATH}
 {{installCommand}}
 --omit=dev # Update current symlink echo "🔄 Updating current symlink..." ln -sfn ${RELEASE_PATH}
 ${CURRENT_PATH} # Reload server using PM2 echo "🔄 Starting/Reloading PM2 service..." cd
