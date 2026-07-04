@@ -107,15 +107,10 @@ ssh -p "$PORT" -i "$SSH_KEY_PATH" "$USERNAME@$HOST" "bash -s" << EOF
     ln -sfn "\${SHARED_PATH}/.env" "\${RELEASE_PATH}/.env"
   fi
   
-  # Smart uploads linking
-  if [ -d "\${RELEASE_PATH}/public" ]; then
-    mkdir -p "\${RELEASE_PATH}/public"
-    ln -sfn "\${SHARED_PATH}/uploads" "\${RELEASE_PATH}/public/uploads"
-    echo "✅ Symlinked shared uploads to public/uploads"
-  else
-    ln -sfn "\${SHARED_PATH}/uploads" "\${RELEASE_PATH}/uploads"
-    echo "✅ Symlinked shared uploads to root uploads"
-  fi
+  # Symlink shared uploads and logs
+  ln -sfn "\${SHARED_PATH}/uploads" "\${RELEASE_PATH}/uploads"
+  mkdir -p "\${RELEASE_PATH}/public"
+  ln -sfn "\${SHARED_PATH}/uploads" "\${RELEASE_PATH}/public/uploads"
   ln -sfn "\${SHARED_PATH}/logs" "\${RELEASE_PATH}/logs"
 
   # Install production dependencies
