@@ -7,13 +7,13 @@ cd "$PROJECT_ROOT"
 
 # Load environment variables
 if [ -f "deploy/.env.deploy" ]; then
-  export $(grep -v '^#' "deploy/.env.deploy" | xargs)
+  . "deploy/.env.deploy"
 elif [ -f "deploy/.env" ]; then
-  export $(grep -v '^#' "deploy/.env" | xargs)
+  . "deploy/.env"
 elif [ -f .env.deploy ]; then
-  export $(grep -v '^#' .env.deploy | xargs)
+  . .env.deploy
 elif [ -f .env ]; then
-  export $(grep -v '^#' .env | xargs)
+  . .env
 fi
 
 # Fallback values
