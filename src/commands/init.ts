@@ -192,9 +192,9 @@ export async function initCommand(): Promise<void> {
         );
         logger.info('\n💻 Local Deployment Alternative:');
         logger.info('You can also deploy manually from your terminal using:');
-        logger.info('  ./deploy.sh  (or: bash deploy.sh)');
+        logger.info('  bash deploy/deploy.sh');
         logger.info(
-          'Ensure your local .env contains DEPLOY_HOST, DEPLOY_SSH_KEY_PATH, and DEPLOY_USERNAME.'
+          'Ensure your local deploy/.env.deploy contains DEPLOY_HOST, DEPLOY_SSH_KEY_PATH, and DEPLOY_USERNAME.'
         );
         console.log('======================================================\n');
       } catch (err: any) {

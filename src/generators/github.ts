@@ -104,7 +104,10 @@ export async function generateDeployShellScript(
   };
 
   const shContent = await readAndCompileDeployShellTemplate(variables);
-  const outputPath = path.join(projectDir, 'deploy.sh');
+  const deployDir = path.join(projectDir, 'deploy');
+  await fs.ensureDir(deployDir);
+
+  const outputPath = path.join(deployDir, 'deploy.sh');
   await fs.writeFile(outputPath, shContent, 'utf-8');
 
   try {
@@ -112,6 +115,22 @@ export async function generateDeployShellScript(
   } catch {
     // Ignore chmod errors on Windows
   }
+
+  // Create .gitignore
+  const gitignorePath = path.join(deployDir, '.gitignore');
+  const gitignoreContent = `# Ignore all files in this folder to protect secrets\n*\n# Allow tracking the script and configurations\n!.gitignore\n!deploy.sh\n!*.example\n`;
+  await fs.writeFile(gitignorePath, gitignoreContent, 'utf-8');
+
+  // Create .env.deploy if it doesn't exist
+  const envPath = path.join(deployDir, '.env.deploy');
+  const envContent = `# Remote Server Credentials\nDEPLOY_HOST=""\nDEPLOY_SSH_KEY_PATH="~/.ssh/id_rsa"\nDEPLOY_USERNAME="ubuntu"\nDEPLOY_PORT="22"\nDEPLOY_APP_NAME="${variables.appName}"\nDEPLOY_PATH="${variables.deployPath}"\n\n# Telegram Notifications\nTELEGRAM_BOT_TOKEN=""\nTELEGRAM_CHAT_ID=""\n`;
+  if (!(await fs.pathExists(envPath))) {
+    await fs.writeFile(envPath, envContent, 'utf-8');
+  }
+
+  // Create .env.example
+  const envExamplePath = path.join(deployDir, '.env.example');
+  await fs.writeFile(envExamplePath, envContent, 'utf-8');
 
   return outputPath;
 }

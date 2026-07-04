@@ -1,7 +1,16 @@
 #!/bin/bash
 
+# Navigate to the project root directory regardless of where script is called from
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$PROJECT_ROOT"
+
 # Load environment variables
-if [ -f .env.deploy ]; then
+if [ -f "deploy/.env.deploy" ]; then
+  export $(grep -v '^#' "deploy/.env.deploy" | xargs)
+elif [ -f "deploy/.env" ]; then
+  export $(grep -v '^#' "deploy/.env" | xargs)
+elif [ -f .env.deploy ]; then
   export $(grep -v '^#' .env.deploy | xargs)
 elif [ -f .env ]; then
   export $(grep -v '^#' .env | xargs)
