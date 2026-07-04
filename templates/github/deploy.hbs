@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     name: Deploy to Server
-    runs-on: ubuntu-latest
+    runs-on: {{runnerLabel}}
 
     steps:
       - name: Checkout repository

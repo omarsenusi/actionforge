@@ -25,6 +25,7 @@ export async function generateGitHubWorkflow(
     lintCommand: detection.hasLintScript ? commands.lint : null,
     typecheckCommand: detection.hasTsConfig ? commands.typecheck : null,
     telegramNotifications: detection.telegramNotifications,
+    runnerLabel: detection.runner === 'self-hosted' ? 'self-hosted' : 'ubuntu-latest',
   };
 
   const yamlContent = await readAndCompileTemplate(detection.framework, variables);
@@ -55,6 +56,7 @@ export async function generateDeployWorkflow(
     scriptPath: detection.scriptPath || 'bin/server.js',
     port: detection.port || '3333',
     telegramNotifications: detection.telegramNotifications,
+    runnerLabel: detection.runner === 'self-hosted' ? 'self-hosted' : 'ubuntu-latest',
   };
 
   const yamlContent = await readAndCompileDeployTemplate(variables);

@@ -81,6 +81,16 @@ export async function initCommand(): Promise<void> {
       default: false,
     },
     {
+      type: 'select',
+      name: 'runner',
+      message: 'Select runner type for workflow execution:',
+      choices: [
+        { name: 'GitHub-hosted (ubuntu-latest)', value: 'github' },
+        { name: 'Self-hosted (your own machine/server)', value: 'self-hosted' },
+      ],
+      default: 'github',
+    },
+    {
       type: 'confirm',
       name: 'generateDeploy',
       message: 'Would you like to configure a PM2 deployment and CD workflow?',
@@ -138,6 +148,7 @@ export async function initCommand(): Promise<void> {
     deployPath: answers.deployPath,
     scriptPath: answers.scriptPath,
     port: answers.port,
+    runner: answers.runner as 'github' | 'self-hosted',
   };
 
   const genSpinner = ora('Generating GitHub Actions CI workflow...').start();

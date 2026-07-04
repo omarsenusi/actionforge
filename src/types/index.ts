@@ -16,6 +16,7 @@ export interface DetectionResult {
   scriptPath?: string | undefined;
   port?: string | undefined;
   generateDeploy?: boolean | undefined;
+  runner?: 'github' | 'self-hosted' | undefined;
 }
 
 export interface FrameworkPlugin {

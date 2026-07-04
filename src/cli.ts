@@ -58,6 +58,7 @@ async function main() {
     .option('--deploy-path <path>', 'Deployment folder path on remote server')
     .option('--script-path <path>', 'Script entrypoint relative to release root')
     .option('--port <port>', 'Application execution port')
+    .option('--runner <runner>', 'Runner type for workflow execution (github or self-hosted)')
     .action(async (options) => {
       try {
         await generateCommand(options);

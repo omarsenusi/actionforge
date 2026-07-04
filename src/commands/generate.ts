@@ -19,6 +19,7 @@ export interface GenerateOptions {
   deployPath?: string;
   scriptPath?: string;
   port?: string;
+  runner?: 'github' | 'self-hosted';
 }
 
 export async function generateCommand(options: GenerateOptions): Promise<void> {
@@ -62,6 +63,7 @@ export async function generateCommand(options: GenerateOptions): Promise<void> {
     deployPath: options.deployPath,
     scriptPath: options.scriptPath,
     port: options.port,
+    runner: options.runner || 'github',
   };
 
   const genSpinner = ora(`Generating CI workflow for ${customizedDetection.framework}...`).start();
