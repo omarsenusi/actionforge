@@ -132,5 +132,17 @@ export async function generateDeployShellScript(
   const envExamplePath = path.join(deployDir, '.env.example');
   await fs.writeFile(envExamplePath, envContent, 'utf-8');
 
+  // Update root .gitignore to ignore build.tar.gz
+  const rootGitignorePath = path.join(projectDir, '.gitignore');
+  const ignoreEntry = '\n# ActionForge temporary deployment package\nbuild.tar.gz\n';
+  if (await fs.pathExists(rootGitignorePath)) {
+    const rootGitignoreContent = await fs.readFile(rootGitignorePath, 'utf-8');
+    if (!rootGitignoreContent.includes('build.tar.gz')) {
+      await fs.appendFile(rootGitignorePath, ignoreEntry, 'utf-8');
+    }
+  } else {
+    await fs.writeFile(rootGitignorePath, ignoreEntry.trim() + '\n', 'utf-8');
+  }
+
   return outputPath;
 }
