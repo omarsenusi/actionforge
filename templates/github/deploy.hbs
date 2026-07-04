@@ -27,12 +27,12 @@ Deploy to Server runs-on: ubuntu-latest steps: - name: Checkout repository uses:
 {{buildCommand}}
 
 - name: Create deployment package run: | cd build && tar -czf ../build.tar.gz . - name: Copy files
-to Server via SCP uses: appleboy/scp-action@master with: host: $\{{ secrets.SERVER_HOST }} username:
-$\{{ secrets.SERVER_USER }} key: $\{{ secrets.SSH_PRIVATE_KEY }} port: 22 source:
+to Server via SCP uses: appleboy/scp-action@master with: host: $\{{ secrets.HOST }} username: $\{{
+secrets.USERNAME }} key: $\{{ secrets.SSH_KEY }} port: $\{{ secrets.PORT }} source:
 "build.tar.gz,ecosystem.config.js" target: "{{deployPath}}/{{appName}}" - name: Execute remote SSH
-deployment commands uses: appleboy/ssh-action@master with: host: $\{{ secrets.SERVER_HOST }}
-username: $\{{ secrets.SERVER_USER }} key: $\{{ secrets.SSH_PRIVATE_KEY }} port: 22 script: |
-APP_NAME="{{appName}}" DEPLOY_PATH="{{deployPath}}" RELEASE_NAME=$(date +%Y%m%d-%H%M%S)
+deployment commands uses: appleboy/ssh-action@master with: host: $\{{ secrets.HOST }} username: $\{{
+secrets.USERNAME }} key: $\{{ secrets.SSH_KEY }} port: $\{{ secrets.PORT }} script: | APP_NAME="{{appName}}"
+DEPLOY_PATH="{{deployPath}}" RELEASE_NAME=$(date +%Y%m%d-%H%M%S)
 RELEASE_PATH="${DEPLOY_PATH}/${APP_NAME}/releases/${RELEASE_NAME}"
 SHARED_PATH="${DEPLOY_PATH}/${APP_NAME}/shared" CURRENT_PATH="${DEPLOY_PATH}/${APP_NAME}/current"
 echo "🚀 Starting release: ${RELEASE_NAME}" mkdir -p ${RELEASE_PATH} mkdir -p ${SHARED_PATH}/uploads

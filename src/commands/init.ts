@@ -164,9 +164,10 @@ export async function initCommand(): Promise<void> {
         logger.info(
           'To enable CD deployment, add the following Secrets to your GitHub repository:'
         );
-        logger.info('  1. SERVER_HOST: Remote server IP/Domain');
-        logger.info('  2. SERVER_USER: SSH username (e.g. ubuntu)');
-        logger.info('  3. SSH_PRIVATE_KEY: SSH private key');
+        logger.info('  1. HOST: Remote server IP/Domain');
+        logger.info('  2. PORT: Remote server SSH port (e.g. 22)');
+        logger.info('  3. USERNAME: SSH username (e.g. ubuntu)');
+        logger.info('  4. SSH_KEY: SSH private key');
         logger.info('\nShared Directory Setup on Server:');
         logger.info(
           `Create the shared folder at: ${customizedDetection.deployPath}/${customizedDetection.appName}/shared`
