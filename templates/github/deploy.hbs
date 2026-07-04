@@ -70,10 +70,21 @@ jobs:
           key: $\{{ secrets.SSH_KEY }}
           port: $\{{ secrets.PORT }}
           script: |
-            # Load environment profile files to make Node/NVM/PM2 available in non-interactive sessions
-            for f in ~/.profile ~/.bashrc ~/.bash_profile; do
-              [ -f "$f" ] && . "$f"
-            done
+            # Load Node managers (NVM, FNM, etc.) to make Node, npm, and PM2 available in non-interactive sessions
+            if [ -d "$HOME/.nvm" ]; then
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            fi
+            if [ -d "$HOME/.fnm" ]; then
+              export PATH="$HOME/.fnm:$PATH"
+              eval "$(fnm env)"
+            fi
+            if [ -d "$HOME/n" ]; then
+              export N_PREFIX="$HOME/n"
+              export PATH="$N_PREFIX/bin:$PATH"
+            fi
+            export PATH="$PATH:$HOME/.local/bin:$HOME/bin"
+
 
             APP_NAME="{{appName}}"
             DEPLOY_PATH="{{deployPath}}"
