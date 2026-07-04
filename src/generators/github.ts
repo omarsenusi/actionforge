@@ -123,7 +123,7 @@ export async function generateDeployShellScript(
 
   // Create .env.deploy if it doesn't exist
   const envPath = path.join(deployDir, '.env.deploy');
-  const envContent = `# Remote Server Credentials\nDEPLOY_HOST=""\nDEPLOY_SSH_KEY_PATH="~/.ssh/id_rsa"\nDEPLOY_USERNAME="ubuntu"\nDEPLOY_PORT="22"\nDEPLOY_APP_NAME="${variables.appName}"\nDEPLOY_PATH="${variables.deployPath}"\n\n# Telegram Notifications\nTELEGRAM_BOT_TOKEN=""\nTELEGRAM_CHAT_ID=""\n`;
+  const envContent = `# Remote Server Credentials\nDEPLOY_HOST=""\nDEPLOY_USERNAME="ubuntu"\nDEPLOY_PORT="22"\nDEPLOY_APP_NAME="${variables.appName}"\nDEPLOY_PATH="${variables.deployPath}"\n\n# SSH Private Key (Provide EITHER the raw multiline key OR path to the key file)\nDEPLOY_SSH_KEY=""\nDEPLOY_SSH_KEY_PATH=""\n\n# Telegram Notifications\nTELEGRAM_BOT_TOKEN=""\nTELEGRAM_CHAT_ID=""\n`;
   if (!(await fs.pathExists(envPath))) {
     await fs.writeFile(envPath, envContent, 'utf-8');
   }

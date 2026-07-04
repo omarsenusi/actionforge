@@ -20,17 +20,26 @@ fi
 HOST="${DEPLOY_HOST:-$HOST}"
 PORT="${DEPLOY_PORT:-${PORT:-22}}"
 USERNAME="${DEPLOY_USERNAME:-${USERNAME:-ubuntu}}"
-SSH_KEY_PATH="${DEPLOY_SSH_KEY_PATH:-$SSH_KEY_PATH}"
 DEPLOY_PATH="${DEPLOY_PATH:-/home/ubuntu/apps}"
 DEFAULT_APP_NAME="{{appName}}"
 APP_NAME="${DEPLOY_APP_NAME:-$DEFAULT_APP_NAME}"
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-$TELEGRAM_TOKEN}"
 TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID}"
 
+# SSH Key handling (supports both raw key content and file path)
+if [ -n "$DEPLOY_SSH_KEY" ]; then
+  SSH_KEY_PATH="deploy/.tmp_id_rsa"
+  printf "%s\n" "$DEPLOY_SSH_KEY" > "$SSH_KEY_PATH"
+  chmod 600 "$SSH_KEY_PATH" 2>/dev/null || true
+  trap 'rm -f "deploy/.tmp_id_rsa"' EXIT INT TERM
+else
+  SSH_KEY_PATH="${DEPLOY_SSH_KEY_PATH:-$SSH_KEY_PATH}"
+fi
+
 # Validation
 if [ -z "$HOST" ] || [ -z "$USERNAME" ] || [ -z "$SSH_KEY_PATH" ]; then
   echo "❌ Error: Missing deployment configuration."
-  echo "Please define DEPLOY_HOST, DEPLOY_SSH_KEY_PATH, and DEPLOY_USERNAME in your .env or .env.deploy file."
+  echo "Please define DEPLOY_HOST, DEPLOY_SSH_KEY (or DEPLOY_SSH_KEY_PATH), and DEPLOY_USERNAME in your .env or .env.deploy file."
   exit 1
 fi
 
